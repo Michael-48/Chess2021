@@ -33,9 +33,30 @@ end
 
 
 function ChessRound:MakeMove(Player, Move)
-    self.PGN = PGN:AppendMove(self.PGN, Move);
+    local PreObjectPGN = PGN:GetBoardDataFromPGN(self.PGN);
+    if PreObjectPGN[Move[1][1]][Move[1][2]]:sub(2,2) == "K" and math.abs(Move[1][2]-Move[2][2]) == 2 then
+        Move[3] = "Castle";
+    else
+        Move[3] = "Std";
+    end
 
+    self.PGN = PGN:AppendMove(self.PGN, Move);
     self.TeamRound = if (self.TeamRound == "W") then "B" else "W";
+
+    -- Check if Checkmate
+    local ObjectPGN = PGN:GetBoardDataFromPGN(self.PGN);
+    if PGN:IsInCheck(ObjectPGN, self.TeamRound) and not PGN:DoesColorHaveAnyMoves(ObjectPGN, self.TeamRound) then
+        self:ConcludeRound();
+        return;
+    end
+
+    -- Respond if is versusAI
+    if Player and self.RoundType == "VersusAI" then
+        task.spawn(function()
+            local NewMove = self:GetAIMove(self.TeamRound, ObjectPGN);
+            self:MakeMove(false,NewMove);
+        end)
+    end
 
     local Data = {};
 
@@ -43,10 +64,12 @@ function ChessRound:MakeMove(Player, Move)
         Data[Player] = {};
         Data[Player].NextMove = true;
         Data[Player].PGN = self.PGN;
+        Data[Player].LastMove = Move;
         Data[Player].TeamRound = self.TeamRound;
     end
 
     for i,Player in pairs(self.TeamAuthorizedPlayers.AllPlayers) do
+        print("Hey")
         ChessRoundService.Client.PlayerSignal:Fire(Players:GetPlayerByUserId(Player), self.GameId, Data[Player]);
     end
 end
@@ -68,10 +91,10 @@ end
 
 
 function ChessRound:IsReadyToStart()
-    if (#self.TeamAuthorizedPlayers.White == 1) and (#self.TeamAuthorizedPlayers.Black == 1) then
-        return true;
+    if self.RoundType == "VersusPlayer" then
+        return (#self.TeamAuthorizedPlayers.White ~= 0) and (#self.TeamAuthorizedPlayers.Black ~= 0);
     else
-        return false;
+        return true;
     end
 end
 
@@ -96,6 +119,17 @@ function ChessRound:StartRound()
     for i,Player in pairs(self.TeamAuthorizedPlayers.AllPlayers) do
         ChessRoundService.Client.PlayerSignal:Fire(Players:GetPlayerByUserId(Player), self.GameId, Data[Player]);
     end
+end
+
+
+function ChessRound:GetAIMove(...)
+    local ChessAIService = Knit.GetService("ChessAIService");
+    return ChessAIService:GetSunfishMove(...);
+end
+
+
+function ChessRound:ConcludeRound()
+    print(self.TeamRound.." Loses...");
 end
 
 

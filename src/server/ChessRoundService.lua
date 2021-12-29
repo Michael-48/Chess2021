@@ -69,4 +69,8 @@ function ChessRoundService.Client:CreateRound(Player, ...)
     return ChessRoundService:CreateRound(...);
 end
 
+function ChessRoundService.Client:GetAvailableRounds(Player, ...)
+    return ChessRoundService:GetAvailableRounds(...);
+end
+
 return ChessRoundService;

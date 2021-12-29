@@ -24,12 +24,6 @@ function RoundController:KnitStart()
     ChessRoundService.PlayerSignal:Connect(function(...)
         self:OnPlayerSignalFire(...);
     end)
-
-    -- TEMP DEMO CODE
-    local ChessRoundService = Knit.GetService("ChessRoundService");
-    
-    local Id1 = ChessRoundService:CreateRound("VersusAI");
-    self:SubscribeToRound(Id1, "TeamBoth");
 end
 
 

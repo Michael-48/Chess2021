@@ -94,10 +94,10 @@ function BoardClass:GenerateBoard()
 
     for Y = 1,8 do
         for X = 1,8 do
-            local Square = ((Y+X+Color)%2==0 and BoardSet.DarkSquare or BoardSet.LightSquare):Clone();
+            local Square = ((Y+X)%2==1 and BoardSet.DarkSquare or BoardSet.LightSquare):Clone();
             Square.Parent = Board;
             Square.LayoutOrder = (X*8)+Y;
-            Square.Name = (X.."-"..(Color == 0 and -(Y-9) or Y));
+            Square.Name = ((Color == 0 and -(X-9) or X).."-"..(Color == 0 and -(Y-9) or Y));
 
             self.janitor:Add(Square.Button.MouseButton1Down:Connect(function()
                 self:SelectPiece(Square.Name);
@@ -134,6 +134,7 @@ end
 
 function BoardClass:SelectPiece(Square)
     if not self.Board[Square]:FindFirstChild("Piece") then return end;
+    if not self.RoundClass.GameStarted then return end;
 
     self:UnselectPiece();
     self.SelectedPiece = Square;
@@ -147,7 +148,7 @@ function BoardClass:SelectPiece(Square)
 
     if not self.RoundClass:CanMoveFor(PieceType:sub(1,1)) then return end
 
-    self:PlacePotentialMoves(self.RoundClass:GetMovesFor(Pos[1],Pos[2]));
+    self:PlacePotentialMoves(PGN:GetMovesFor(self.RoundClass.PieceData,Pos[1],Pos[2]));
 
     -- HoverPiece
     local Piece = self.Board[self.SelectedPiece].Piece.ImageRectOffset;
@@ -200,8 +201,6 @@ function BoardClass:AttemptPlacePiece(Square)
                 v.Highlight.Visible = false;
             end
         end
-        self.Board[Square].Highlight.Visible = true;
-        self.Board[LastSquare].Highlight.Visible = true;
     else
         -- go back to not holding piece
         if self.SelectedPiece then
@@ -239,6 +238,9 @@ function BoardClass:PlacePotentialMoves(MovePos)
 end
 
 function BoardClass:UpdateBoard()
+    local LastMove = self.RoundClass.LastMove;
+    self.Board[LastMove[1][1].."-"..LastMove[1][2]].Highlight.Visible = true
+    self.Board[LastMove[2][1].."-"..LastMove[2][2]].Highlight.Visible = true
     self:ClearBoard();
     self:DisplayGame(self.RoundClass.PieceData)
 end
